@@ -1,0 +1,10 @@
+(executable
+ (name instr)
+ (modes byte exe)
+ (flags -rectypes)
+ (libraries cil))
+
+; (library
+;  (name common)
+;  (public_name common)
+;  (libraries cil))

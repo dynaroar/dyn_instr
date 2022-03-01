@@ -6,6 +6,7 @@ module L = List
 let cil_tmp_prefix = "__cil_tmp"
 let main_name = "main"
 let mainQ_prefix = "mainQ"
+let vtrace_prefix = "vtrace"
 
 let contains s prefix =
   let prefix_len = S.length prefix in
@@ -14,6 +15,9 @@ let contains s prefix =
 
 let is_cil_tmp vname =
   contains vname cil_tmp_prefix
+
+let mk_vtrace_name loc label =
+  vtrace_prefix ^ "_" ^ label ^ "_" ^ (string_of_int loc.line)
 
 let v2e (v: lval): exp = Lval v
 
@@ -30,7 +34,6 @@ let mk_fundec (fname: string) (ftype: typ): fundec =
 let mk_Call ?(ftype=TVoid []) ?(av=None) (fname: string) args : instr = 
   let fvar = makeVarinfo true fname ftype in
   Call(av, vi2e fvar, args, !currentLoc)
-  
 
 let only_functions (fn : fundec -> location -> unit) (g : global) : unit = 
   match g with

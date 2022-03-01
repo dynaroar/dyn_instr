@@ -21,13 +21,19 @@ let rec is_nla_exp (e: exp) =
   | CastE (_, e1) -> is_nla_exp e1
   | _ -> false
 
+let is_complex_exp (e: exp) =
+  is_nla_exp e
+
 let vtrace_if_label = "if"
 let vtrace_else_label = "else"
+let vtrace_assign_label = "assign"
 
 class add_vtrace_for_complex_exp_visitor ast fd = object(self)
   inherit nopCilVisitor
 
-  method private mk_vtrace label params loc =
+  method private mk_vtrace label loc =
+    let fd_vars = fd.sformals @ fd.slocals in
+    let params, _ = List.partition (fun vi -> not (is_cil_tmp vi.vname)) fd_vars in
     let vtrace_param_types = L.map (fun vi -> (vi.vname, vi.vtype)) params in
     let vtrace_fun_typ = mk_fun_typ voidType vtrace_param_types in
     let vtrace_name = mk_vtrace_name loc label in
@@ -42,11 +48,9 @@ class add_vtrace_for_complex_exp_visitor ast fd = object(self)
     let action s =
       match s.skind with
       | If (if_cond, if_block, else_block, loc) ->
-        if is_nla_exp if_cond then
-          let fd_vars = fd.sformals @ fd.slocals in
-          let params, _ = List.partition (fun vi -> not (is_cil_tmp vi.vname)) fd_vars in
-          let vtrace_if_call = self#mk_vtrace vtrace_if_label params loc in
-          let vtrace_else_call = self#mk_vtrace vtrace_else_label params loc in
+        if is_complex_exp if_cond then
+          let vtrace_if_call = self#mk_vtrace vtrace_if_label loc in
+          let vtrace_else_call = self#mk_vtrace vtrace_else_label loc in
           let () = if_block.bstmts <- [mkStmtOneInstr vtrace_if_call] @ if_block.bstmts in
           let () = else_block.bstmts <- [mkStmtOneInstr vtrace_else_call] @ else_block.bstmts in
           s
@@ -54,6 +58,25 @@ class add_vtrace_for_complex_exp_visitor ast fd = object(self)
       | _ -> s
     in
     ChangeDoChildrenPost(s, action)
+
+  method vinst (i: instr) =
+    let n_instr_list =
+      match i with
+      | Set (_, exp, loc) ->
+        if is_complex_exp exp then
+          let vtrace_call = self#mk_vtrace vtrace_assign_label loc in
+          [i; vtrace_call]
+        else [i]
+      | Call (Some lhs, _, args, loc) ->
+        if L.exists (fun arg -> is_complex_exp arg) args then
+          let vtrace_call = self#mk_vtrace vtrace_assign_label loc in
+          [i; vtrace_call]
+        else [i]
+      | _ -> [i]
+
+    in 
+    ChangeTo(n_instr_list)
+
 end
 
 let add_vtrace_for_complex_exp ast fd _ =

@@ -91,8 +91,11 @@ let () =
     Cil.useLogicalOperators := true;
 
     let src = Sys.argv.(1) in
+    let fn = Filename.remove_extension src in
+    let ext = Filename.extension src in
     let ast = Frontc.parse src () in
     mk_instrumenting_functions ast;
     iterGlobals ast (only_functions (add_vtrace_for_complex_exp ast));
-    write_stdout ast
+    (* write_stdout ast *)
+    write_src (fn ^ "_instr" ^ ext) ast
   end

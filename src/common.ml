@@ -27,7 +27,7 @@ let mk_fun_typ ?(is_var_arg=false) ?(attrs=[]) (rt : typ) (args : (string * typ)
   TFun(rt, Some (L.map (fun a -> (fst a, snd a, [])) args), is_var_arg, attrs)
 
 let mk_fundec (fname: string) (ftype: typ): fundec =
-  let fd = emptyFunction fname in
+  let fd = emptyFunction fname in  
   let () = setFunctionTypeMakeFormals fd ftype in
   fd
 

@@ -1,10 +1,11 @@
 extern int reach_error();
 
-int main() {
+void main(int argc , char **argv ) {
     int x;
+    int y = x;
     if (x * x > 100) {
         //x = x*x + 1;
-        return 0;
+        return;
     }
     else
         reach_error();

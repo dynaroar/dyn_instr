@@ -7,7 +7,7 @@
     ```
 - Install Dune, CIL and other dependencies:
     ```
-    opam install dune cil num ocamlbuild ocamlfind
+    opam install dune cil num ocamlbuild ocamlfind menhir
     ```
 - Compile and run:
     ```

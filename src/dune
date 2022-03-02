@@ -1,10 +1,19 @@
 (executable
- (name instr)
+ (name tinstr)
+ (modules tinstr)
  (modes byte exe)
  (flags -rectypes)
- (libraries cil))
+ (libraries common cil))
 
-; (library
-;  (name common)
-;  (public_name common)
-;  (libraries cil))
+(executable
+ (name vinstr)
+ (modules vinstr)
+ (modes byte exe)
+ (flags -rectypes)
+ (libraries common cil csv))
+
+(library
+ (name common)
+ (modules common)
+ (flags -rectypes)
+ (libraries cil))

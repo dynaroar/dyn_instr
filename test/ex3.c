@@ -1,4 +1,4 @@
-extern int reach_error();
+extern void reach_error();
 
 int main() {
     int x;

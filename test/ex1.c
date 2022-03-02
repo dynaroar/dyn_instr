@@ -1,8 +1,8 @@
-extern int reach_error();
+extern void reach_error();
 
-void main(int argc , char **argv ) {
+void main() {
     int x;
-    int y = x;
+    // int y = x;
     if (x * x > 100) {
         //x = x*x + 1;
         return;

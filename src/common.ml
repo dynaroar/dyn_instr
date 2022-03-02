@@ -2,11 +2,15 @@ open Cil
 module E = Errormsg
 module S = String
 module L = List
+module H = Hashtbl
 
 let cil_tmp_prefix = "__cil_tmp"
 let main_name = "main"
 let mainQ_prefix = "mainQ"
 let vtrace_prefix = "vtrace"
+let vtrace_if_label = "if"
+let vtrace_else_label = "else"
+let vtrace_assign_label = "assign"
 
 let contains s prefix =
   let prefix_len = S.length prefix in
@@ -15,6 +19,29 @@ let contains s prefix =
 
 let is_cil_tmp vname =
   contains vname cil_tmp_prefix
+
+let rec is_var_exp (e: exp) =
+  match e with
+  | Lval (Var _, _) -> true
+  | UnOp (_, e1, _) -> is_var_exp e1
+  | BinOp (_, e1, e2, _) -> is_var_exp e1 || is_var_exp e2
+  | CastE (_, e1) -> is_var_exp e1
+  | _ -> false
+  
+let rec is_nla_exp (e: exp) =
+  match e with
+  | BinOp (bop, e1, e2, _) -> 
+    if is_nla_exp e1 || is_nla_exp e2 then true
+    else 
+      (match bop with
+      | Mult | Div | Mod | Shiftlt | Shiftrt -> is_var_exp e1 && is_var_exp e2
+      | _ -> false)
+  | UnOp (_, e1, _) -> is_nla_exp e1
+  | CastE (_, e1) -> is_nla_exp e1
+  | _ -> false
+
+  let is_complex_exp (e: exp) =
+    is_nla_exp e
 
 let mk_vtrace_name loc label =
   vtrace_prefix ^ "_" ^ label ^ "_" ^ (string_of_int loc.line)

@@ -3,33 +3,6 @@ open Common
 
 let extern_empty_body_funcs = ["reach_error"]
 
-let rec is_var_exp (e: exp) =
-  match e with
-  | Lval (Var _, _) -> true
-  | UnOp (_, e1, _) -> is_var_exp e1
-  | BinOp (_, e1, e2, _) -> is_var_exp e1 || is_var_exp e2
-  | CastE (_, e1) -> is_var_exp e1
-  | _ -> false
-
-let rec is_nla_exp (e: exp) =
-  match e with
-  | BinOp (bop, e1, e2, _) -> 
-    if is_nla_exp e1 || is_nla_exp e2 then true
-    else 
-      (match bop with
-      | Mult | Div | Mod | Shiftlt | Shiftrt -> is_var_exp e1 && is_var_exp e2
-      | _ -> false)
-  | UnOp (_, e1, _) -> is_nla_exp e1
-  | CastE (_, e1) -> is_nla_exp e1
-  | _ -> false
-
-let is_complex_exp (e: exp) =
-  is_nla_exp e
-
-let vtrace_if_label = "if"
-let vtrace_else_label = "else"
-let vtrace_assign_label = "assign"
-
 class add_vtrace_for_complex_exp_visitor ast fd = object(self)
   inherit nopCilVisitor
 

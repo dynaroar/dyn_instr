@@ -10,10 +10,21 @@
  (modules vinstr)
  (modes byte exe)
  (flags -rectypes)
- (libraries common cil csv))
+ (libraries common cil csv iparsing))
 
 (library
  (name common)
  (modules common)
  (flags -rectypes)
  (libraries cil))
+
+(ocamllex ilexer)
+
+(menhir
+ (modules iparser))
+
+(library
+ (name iparsing)
+ (modules iparser ilexer)
+ (flags -rectypes)
+ (libraries common cil))

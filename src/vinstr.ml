@@ -1,7 +1,23 @@
 open Cil
 open Common
+open Iparsing
+open Lexing
 
 let csv_sep = ';'
+
+let print_error_position outx lexbuf =
+  let pos = lexbuf.lex_curr_p in
+  Printf.fprintf outx "%s:%d:%d" pos.pos_fname
+    pos.pos_lnum (pos.pos_cnum - pos.pos_bol + 1)
+
+let parse_exp_with_error lexbuf =
+  try Iparser.inv Ilexer.read lexbuf with
+  | Ilexer.SyntaxError msg ->
+    Printf.fprintf stderr "%a: %s\n" print_error_position lexbuf msg;
+    exit (-1)
+  | Iparser.Error ->
+    Printf.fprintf stderr "%a: syntax error\n" print_error_position lexbuf;
+    exit (-1)
 
 class add_inv_for_complex_exp_visitor ast inv_tbl fd = object(self)
   inherit nopCilVisitor
@@ -28,8 +44,10 @@ class add_inv_for_complex_exp_visitor ast inv_tbl fd = object(self)
           let vtrace_else_name = mk_vtrace_name loc vtrace_else_label in
           let if_appx = H.find inv_tbl vtrace_if_name in
           let else_appx = H.find inv_tbl vtrace_else_name in
-          print_endline if_appx;
-          print_endline else_appx;
+          let if_appx_exp = parse_exp_with_error (Lexing.from_string if_appx) in
+          let else_appx_exp = parse_exp_with_error (Lexing.from_string else_appx) in
+          Errormsg.log "if_appx_exp: %a\n" d_exp if_appx_exp;
+          Errormsg.log "else_appx_exp: %a\n" d_exp else_appx_exp;
           (* let vtrace_if_call = self#mk_vtrace vtrace_if_label loc in
           let vtrace_else_call = self#mk_vtrace vtrace_else_label loc in
           let () = if_block.bstmts <- [mkStmtOneInstr vtrace_if_call] @ if_block.bstmts in

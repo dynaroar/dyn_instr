@@ -15,6 +15,8 @@
 
 (documentation https://url/to/documentation)
 
+(using menhir 2.1)
+
 (package
  (name dyn_instr)
  (synopsis "CIL Instrumentation for Dynamic Analysis")

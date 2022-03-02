@@ -36,6 +36,7 @@ expr:
   | TRUE { Cil.one }
   | FALSE { Cil.zero }
   | id=ID { vi2e (Cil.makeVarinfo false id intType) }
+  | op=unop e=expr { Cil.UnOp (op, e, intType) }
   | e1=expr op=binop e2=expr { Cil.BinOp (op, e1, e2, intType) }
 
 %inline unop:

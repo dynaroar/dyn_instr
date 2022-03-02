@@ -11,6 +11,7 @@ let vtrace_prefix = "vtrace"
 let vtrace_if_label = "if"
 let vtrace_else_label = "else"
 let vtrace_assign_label = "assign"
+let error_func_name = "reach_error"
 
 let contains s prefix =
   let prefix_len = S.length prefix in
@@ -19,6 +20,11 @@ let contains s prefix =
 
 let is_cil_tmp vname =
   contains vname cil_tmp_prefix
+
+let boolType =
+  match intType with
+  | TInt (_, attrs) -> TInt (IBool, attrs)
+  | _ -> intType
 
 let rec is_var_exp (e: exp) =
   match e with
@@ -50,6 +56,9 @@ let v2e (v: lval): exp = Lval v
 
 let vi2e (vi: varinfo): exp = Lval (var vi)
 
+let neg (e: exp) =
+  UnOp (LNot, e, boolType)
+
 let mk_fun_typ ?(is_var_arg=false) ?(attrs=[]) (rt : typ) (args : (string * typ) list): typ =
   TFun(rt, Some (L.map (fun a -> (fst a, snd a, [])) args), is_var_arg, attrs)
 
@@ -61,6 +70,17 @@ let mk_fundec (fname: string) (ftype: typ): fundec =
 let mk_Call ?(ftype=TVoid []) ?(av=None) (fname: string) args : instr = 
   let fvar = makeVarinfo true fname ftype in
   Call(av, vi2e fvar, args, !currentLoc)
+
+
+let mk_error_func_call () = 
+  mkStmtOneInstr (mk_Call error_func_name [])
+
+let mk_empty_block () = mkBlock []
+
+let mk_error_block () =
+  let block = mk_empty_block () in
+  block.bstmts <- (mk_error_func_call ())::block.bstmts;
+  block
 
 let only_functions (fn : fundec -> location -> unit) (g : global) : unit = 
   match g with

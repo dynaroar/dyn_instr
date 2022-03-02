@@ -48,10 +48,16 @@ class add_inv_for_complex_exp_visitor ast inv_tbl fd = object(self)
           let else_appx_exp = parse_exp_with_error (Lexing.from_string else_appx) in
           Errormsg.log "if_appx_exp: %a\n" d_exp if_appx_exp;
           Errormsg.log "else_appx_exp: %a\n" d_exp else_appx_exp;
-          (* let vtrace_if_call = self#mk_vtrace vtrace_if_label loc in
-          let vtrace_else_call = self#mk_vtrace vtrace_else_label loc in
-          let () = if_block.bstmts <- [mkStmtOneInstr vtrace_if_call] @ if_block.bstmts in
-          let () = else_block.bstmts <- [mkStmtOneInstr vtrace_else_call] @ else_block.bstmts in *)
+          let if_instr_stmt =
+            let else_error_stmt = mkStmt (If (neg if_appx_exp, mk_error_block (), mk_empty_block (), loc)) in
+            mkStmt (If (else_appx_exp, mk_error_block (), mkBlock [else_error_stmt], loc)) in
+          Errormsg.log "if_instr_stmt: %a\n" d_stmt if_instr_stmt;
+          let else_instr_stmt =
+            let else_error_stmt = mkStmt (If (neg else_appx_exp, mk_error_block (), mk_empty_block (), loc)) in
+            mkStmt (If (if_appx_exp, mk_error_block (), mkBlock [else_error_stmt], loc)) in
+          Errormsg.log "else_instr_stmt: %a\n" d_stmt else_instr_stmt;
+          if_block.bstmts <- [if_instr_stmt] @ if_block.bstmts;
+          else_block.bstmts <- [else_instr_stmt] @ else_block.bstmts;
           s
         else s
       | _ -> s

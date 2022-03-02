@@ -1,2 +1,2 @@
-vtrace_if_6; x >= 11 || x = 3
+vtrace_if_6; x >= 11
 vtrace_else_6; 0 <= x && x <= 10

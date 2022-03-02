@@ -35,27 +35,32 @@ class add_inv_for_complex_exp_visitor ast inv_tbl fd = object(self)
     let vtrace_call = mk_Call vtrace_name vtrace_args in
     vtrace_call
 
+  method private find_and_parse_inv ?(if_inv=true) loc label =
+    let missing_appx = if if_inv then Cil.zero else Cil.one in
+    let vtrace_name = mk_vtrace_name loc label in
+    match H.find_opt inv_tbl vtrace_name with
+    | None -> missing_appx
+    | Some appx ->
+      (try parse_exp_with_error (Lexing.from_string appx) with
+      | _ -> missing_appx)
+
   method vstmt (s: stmt) =
     let action s =
       match s.skind with
       | If (if_cond, if_block, else_block, loc) ->
         if is_complex_exp if_cond then
-          let vtrace_if_name = mk_vtrace_name loc vtrace_if_label in
-          let vtrace_else_name = mk_vtrace_name loc vtrace_else_label in
-          let if_appx = H.find inv_tbl vtrace_if_name in
-          let else_appx = H.find inv_tbl vtrace_else_name in
-          let if_appx_exp = parse_exp_with_error (Lexing.from_string if_appx) in
-          let else_appx_exp = parse_exp_with_error (Lexing.from_string else_appx) in
-          Errormsg.log "if_appx_exp: %a\n" d_exp if_appx_exp;
-          Errormsg.log "else_appx_exp: %a\n" d_exp else_appx_exp;
+          let if_appx_exp = self#find_and_parse_inv loc vtrace_if_label in
+          let else_appx_exp = self#find_and_parse_inv loc vtrace_else_label in
+          (* Errormsg.log "if_appx_exp: %a\n" d_exp if_appx_exp; *)
+          (* Errormsg.log "else_appx_exp: %a\n" d_exp else_appx_exp; *)
           let if_instr_stmt =
             let else_error_stmt = mkStmt (If (neg if_appx_exp, mk_error_block (), mk_empty_block (), loc)) in
             mkStmt (If (else_appx_exp, mk_error_block (), mkBlock [else_error_stmt], loc)) in
-          Errormsg.log "if_instr_stmt: %a\n" d_stmt if_instr_stmt;
+          (* Errormsg.log "if_instr_stmt: %a\n" d_stmt if_instr_stmt; *)
           let else_instr_stmt =
             let else_error_stmt = mkStmt (If (neg else_appx_exp, mk_error_block (), mk_empty_block (), loc)) in
             mkStmt (If (if_appx_exp, mk_error_block (), mkBlock [else_error_stmt], loc)) in
-          Errormsg.log "else_instr_stmt: %a\n" d_stmt else_instr_stmt;
+          (* Errormsg.log "else_instr_stmt: %a\n" d_stmt else_instr_stmt; *)
           if_block.bstmts <- [if_instr_stmt] @ if_block.bstmts;
           else_block.bstmts <- [else_instr_stmt] @ else_block.bstmts;
           s

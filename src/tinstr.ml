@@ -7,15 +7,14 @@ class add_vtrace_for_complex_exp_visitor ast fd = object(self)
   inherit nopCilVisitor
 
   method private mk_vtrace label loc =
-    let fd_vars = fd.sformals @ fd.slocals in
-    let params, _ = List.partition (fun vi -> not (is_cil_tmp vi.vname)) fd_vars in
+    let params = fd.sformals @ (L.filter (fun vi -> not (is_cil_tmp vi.vname)) fd.slocals) in
     let vtrace_param_types = L.map (fun vi -> (vi.vname, vi.vtype)) params in
     let vtrace_fun_typ = mk_fun_typ voidType vtrace_param_types in
     let vtrace_name = mk_vtrace_name loc label in
     let vtrace_fd = mk_fundec vtrace_name vtrace_fun_typ in
     let vtrace_global = GFun (vtrace_fd, loc) in
     let () = ast.globals <- [vtrace_global] @ ast.globals in
-    let vtrace_args = List.map (fun v -> vi2e v) vtrace_fd.sformals in
+    let vtrace_args = L.map (fun v -> vi2e v) vtrace_fd.sformals in
     let vtrace_call = mk_Call vtrace_name vtrace_args in
     vtrace_call
 
@@ -104,11 +103,16 @@ let mk_instrumenting_functions ast =
   let mainQ_args = collect_uninitialized_local_vars main_fd in
   let mainQ_arg_names = L.map (fun vi -> vi.vname) mainQ_args in
   let mainQ_locals = L.filter (fun vi -> not (L.mem vi.vname mainQ_arg_names)) main_fd.slocals in
-  let mainQ_type = mk_fun_typ voidType (List.map (fun v -> (v.vname, v.vtype)) mainQ_args) in
+  let mainQ_type = mk_fun_typ voidType (L.map (fun v -> (v.vname, v.vtype)) mainQ_args) in
   let mainQ_fd = mk_fundec mainQ_prefix mainQ_type in
-  let mainQ_call_stmt = mkStmtOneInstr (mk_Call ~ftype:mainQ_type mainQ_prefix (List.map vi2e mainQ_args)) in
-  mainQ_fd.slocals <- mainQ_locals;
+  let mainQ_call_stmt = mkStmtOneInstr (mk_Call ~ftype:mainQ_type mainQ_prefix (L.map vi2e mainQ_args)) in
+  let mainQ_tmp_args = L.map (fun vi -> makeTempVar mainQ_fd ~name:("_" ^ vi.vname) vi.vtype) mainQ_args in
+  let mainQ_tmp_init_assigns = L.map2 (fun vi tvi -> mkStmtOneInstr (Set (var tvi, vi2e vi, !currentLoc))) mainQ_args mainQ_tmp_args in
+
+  mainQ_fd.slocals <- mainQ_locals @ mainQ_fd.slocals;
   mainQ_fd.sbody <- visitCilBlock (new create_void_return_visitor) main_fd.sbody;
+  mainQ_fd.sbody.bstmts <- mainQ_tmp_init_assigns @ mainQ_fd.sbody.bstmts;
+  
   let main_return_stmt =
     let rt, _, _, _ = splitFunctionType main_fd.svar.vtype in
     match rt with

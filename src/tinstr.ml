@@ -1,7 +1,7 @@
 open Cil
 open Common
 
-let extern_empty_body_funcs = ["reach_error"]
+let extern_empty_body_funcs = [error_func_name]
 
 class add_vtrace_for_complex_exp_visitor ast fd = object(self)
   inherit nopCilVisitor
@@ -57,6 +57,27 @@ let add_vtrace_for_complex_exp ast fd _ =
   let visitor = new add_vtrace_for_complex_exp_visitor ast fd in
   ignore (visitCilFunction (visitor :> nopCilVisitor) fd)
 
+class add_mainQ_init_args_visitor mainQ_init_args = object(self)
+  inherit nopCilVisitor
+
+  method vinst (i: instr) =
+    let n_instr_list =
+      match i with
+      | Call (lhs, fn, args, loc) ->
+        if not (is_builtin_function (fname_of_call fn)) then
+          [Call (lhs, fn, args @ (List.map vi2e mainQ_init_args), loc)]
+        else [i]
+      | _ -> [i]
+    in 
+    ChangeTo(n_instr_list)
+end
+
+let add_mainQ_init_args mainQ_init_args fd _ =
+  (if not (is_main (fname_of_fundec fd)) then
+    ignore(List.map (fun vi -> makeFormalVar fd vi.vname vi.vtype) mainQ_init_args));
+  let visitor = new add_mainQ_init_args_visitor mainQ_init_args in
+  ignore (visitCilBlock (visitor :> nopCilVisitor) fd.sbody)
+
 class collect_initialized_local_vars_visitor = object(self)
   inherit nopCilVisitor
   
@@ -84,12 +105,6 @@ let collect_uninitialized_local_vars (fd: fundec) =
   let initialized_vars = culv#get_initialized_vars () in
   List.filter (fun vi -> not (List.mem vi.vname initialized_vars)) fd.slocals
 
-let atoi_func_name = "atoi"
-let argv_name = "argv"
-let argc_name = "argc"
-let atoi_func_type =
-  mk_fun_typ intType [("str", charConstPtrType)]
-
 let mk_argv_assignment v main_argv argv_index =
   (** arg <- *(argv + index) *)
   let arg = v2e (mkMem (increm (vi2e main_argv) argv_index) NoOffset) in
@@ -106,12 +121,12 @@ let mk_instrumenting_functions ast =
   let mainQ_type = mk_fun_typ voidType (L.map (fun v -> (v.vname, v.vtype)) mainQ_args) in
   let mainQ_fd = mk_fundec mainQ_prefix mainQ_type in
   let mainQ_call_stmt = mkStmtOneInstr (mk_Call ~ftype:mainQ_type mainQ_prefix (L.map vi2e mainQ_args)) in
-  let mainQ_tmp_args = L.map (fun vi -> makeTempVar mainQ_fd ~name:("_" ^ vi.vname) vi.vtype) mainQ_args in
-  let mainQ_tmp_init_assigns = L.map2 (fun vi tvi -> mkStmtOneInstr (Set (var tvi, vi2e vi, !currentLoc))) mainQ_args mainQ_tmp_args in
+  let mainQ_init_args = L.map (fun vi -> makeTempVar mainQ_fd ~name:("_inp_" ^ vi.vname) vi.vtype) mainQ_args in
+  let mainQ_init_assigns = L.map2 (fun vi tvi -> mkStmtOneInstr (Set (var tvi, vi2e vi, !currentLoc))) mainQ_args mainQ_init_args in
 
   mainQ_fd.slocals <- mainQ_locals @ mainQ_fd.slocals;
   mainQ_fd.sbody <- visitCilBlock (new create_void_return_visitor) main_fd.sbody;
-  mainQ_fd.sbody.bstmts <- mainQ_tmp_init_assigns @ mainQ_fd.sbody.bstmts;
+  mainQ_fd.sbody.bstmts <- mainQ_init_assigns @ mainQ_fd.sbody.bstmts;
   
   let main_return_stmt =
     let rt, _, _, _ = splitFunctionType main_fd.svar.vtype in
@@ -129,7 +144,8 @@ let mk_instrumenting_functions ast =
   main_fd.slocals <- mainQ_args;
   main_fd.sbody <- mkBlock (argv_assignments @ [mainQ_call_stmt; main_return_stmt]);
   let mainQ_global = GFun(mainQ_fd, !currentLoc) in
-  ast.globals <- add_global_before_func main_name mainQ_global ast.globals
+  ast.globals <- add_global_before_func main_name mainQ_global ast.globals;
+  mainQ_init_args
 
 class add_empty_body_extern_visitor = object(self)
   inherit nopCilVisitor
@@ -161,7 +177,8 @@ let () =
     let fn = Filename.remove_extension src in
     let ext = Filename.extension src in
     let ast = Frontc.parse src () in
-    mk_instrumenting_functions ast;
+    let mainQ_init_args = mk_instrumenting_functions ast in
+    iterGlobals ast (only_functions (add_mainQ_init_args mainQ_init_args));
     iterGlobals ast (only_functions (add_vtrace_for_complex_exp ast));
     visitCilFile (new add_empty_body_extern_visitor) ast;
     ast.globals <- (GText "#include \"stdlib.h\""):: ast.globals;

@@ -13,6 +13,12 @@ let vtrace_else_label = "else"
 let vtrace_assign_label = "assign"
 let error_func_name = "reach_error"
 
+let atoi_func_name = "atoi"
+let argv_name = "argv"
+let argc_name = "argc"
+
+let builtin_functions = [main_name; mainQ_prefix; vtrace_prefix; error_func_name; atoi_func_name]
+
 let contains s prefix =
   let prefix_len = S.length prefix in
   S.length s >= prefix_len &&
@@ -20,6 +26,20 @@ let contains s prefix =
 
 let is_cil_tmp vname =
   contains vname cil_tmp_prefix
+
+let is_main fname =
+  contains fname main_name
+
+let is_builtin_function fname =
+  L.exists (fun prefix -> contains fname prefix) builtin_functions
+
+let fname_of_fundec fd =
+  fd.svar.vname
+
+let fname_of_call e =
+  match e with
+  | Lval (Var vi, _) -> vi.vname
+  | _ -> E.s (E.error "Cannot get function name from: %a" d_exp e)
 
 let boolType =
   match intType with
@@ -71,6 +91,8 @@ let mk_Call ?(ftype=TVoid []) ?(av=None) (fname: string) args : instr =
   let fvar = makeVarinfo true fname ftype in
   Call(av, vi2e fvar, args, !currentLoc)
 
+let atoi_func_type =
+  mk_fun_typ intType [("str", charConstPtrType)]  
 
 let mk_error_func_call () = 
   mkStmtOneInstr (mk_Call error_func_name [])

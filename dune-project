@@ -21,7 +21,7 @@
  (name dyn_instr)
  (synopsis "CIL Instrumentation for Dynamic Analysis")
  (description "CIL Instrumentation for Dynamic Analysis")
- (depends ocaml dune)
+ (depends ocaml dune cil)
  (tags
   (dynamic analysis)))
 

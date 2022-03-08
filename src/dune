@@ -1,30 +1,31 @@
-(executable
- (name tinstr)
- (modules tinstr)
- (modes byte exe)
- (flags -rectypes)
- (libraries common cil))
+(include_subdirs unqualified)
 
 (executable
- (name vinstr)
- (modules vinstr)
+ (name instr)
  (modes byte exe)
  (flags -rectypes)
- (libraries common cil csv iparsing))
+ (libraries cil csv))
 
-(library
- (name common)
- (modules common)
- (flags -rectypes)
- (libraries cil))
+; (executable
+;  (name vinstr)
+;  (modules vinstr)
+;  (modes byte exe)
+;  (flags -rectypes)
+;  (libraries common cil csv iparsing))
+
+; (library
+;  (name common)
+;  (modules common)
+;  (flags -rectypes)
+;  (libraries cil))
 
 (ocamllex ilexer)
 
 (menhir
  (modules iparser))
 
-(library
- (name iparsing)
- (modules iparser ilexer)
- (flags -rectypes)
- (libraries common cil))
+; (library
+;  (name iparsing)
+;  (modules iparser ilexer)
+;  (flags -rectypes)
+;  (libraries common cil))

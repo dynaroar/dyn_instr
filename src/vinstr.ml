@@ -1,6 +1,5 @@
 open Cil
 open Common
-open Iparsing
 open Lexing
 
 let csv_sep = ';'
@@ -75,7 +74,7 @@ let add_inv_for_complex_exp ast inv_tbl fd _ =
   let visitor = new add_inv_for_complex_exp_visitor ast inv_tbl fd in
   ignore (visitCilFunction (visitor :> nopCilVisitor) fd)
 
-let () = 
+let validate_instr src csv = 
   begin
     initCIL();
     Cil.lineDirectiveStyle := None; (* reduce code, remove all junk stuff *)
@@ -83,8 +82,6 @@ let () =
     (* for Cil to retain &&, ||, ?: instead of transforming them to If stmts *)
     Cil.useLogicalOperators := true;
 
-    let src = Sys.argv.(1) in
-    let csv = Sys.argv.(2) in
     let fn = Filename.remove_extension src in
     let ext = Filename.extension src in
     

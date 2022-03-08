@@ -165,7 +165,7 @@ class add_empty_body_extern_visitor = object(self)
     ChangeTo(n_globs)
 end
 
-let () = 
+let vtrace_instr src = 
   begin
     initCIL();
     Cil.lineDirectiveStyle := None; (* reduce code, remove all junk stuff *)
@@ -173,7 +173,6 @@ let () =
     (* for Cil to retain &&, ||, ?: instead of transforming them to If stmts *)
     Cil.useLogicalOperators := true;
 
-    let src = Sys.argv.(1) in
     let fn = Filename.remove_extension src in
     let ext = Filename.extension src in
     let ast = Frontc.parse src () in

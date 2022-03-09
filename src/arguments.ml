@@ -3,13 +3,16 @@ open Globals
 let arguments_raw =
   [
     ( [ "-dig"; "--dig" ],
-      "Instrumentation for dynamic analysis with DIG",
+      "Enable instrumentation for dynamic analysis with DIG",
       Arg.Set enable_dig_instr );
+    ( [ "-nopre"; "--nopre" ],
+      "Disable instrumentation for precondition analysis",
+      Arg.Clear enable_pre_instr );
     ( [ "-val"; "--validate" ],
-      "Instrumentation for static validation with Ultimate",
+      "Enable instrumentation for static validation with Ultimate",
       Arg.Set enable_validate_instr );
     ( [ "-inv"; "--invariants" ],
-      "Potential invariants to be validated",
+      "Provide potential invariants to be validated in the CSV format",
       Arg.Set_string input_csv_file )
   ]
 

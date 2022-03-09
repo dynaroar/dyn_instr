@@ -121,8 +121,16 @@ let mk_instrumenting_functions ast =
   let mainQ_type = mk_fun_typ voidType (L.map (fun v -> (v.vname, v.vtype)) mainQ_args) in
   let mainQ_fd = mk_fundec mainQ_prefix mainQ_type in
   let mainQ_call_stmt = mkStmtOneInstr (mk_Call ~ftype:mainQ_type mainQ_prefix (L.map vi2e mainQ_args)) in
-  let mainQ_init_args = L.map (fun vi -> makeTempVar mainQ_fd ~name:("_inp_" ^ vi.vname) vi.vtype) mainQ_args in
-  let mainQ_init_assigns = L.map2 (fun vi tvi -> mkStmtOneInstr (Set (var tvi, vi2e vi, !currentLoc))) mainQ_args mainQ_init_args in
+  let mainQ_init_args = 
+      if !Globals.enable_pre_instr then 
+        L.map (fun vi -> makeTempVar mainQ_fd ~name:("_inp_" ^ vi.vname) vi.vtype) mainQ_args
+      else []
+    in
+  let mainQ_init_assigns = 
+      if !Globals.enable_pre_instr then
+        L.map2 (fun vi tvi -> mkStmtOneInstr (Set (var tvi, vi2e vi, !currentLoc))) mainQ_args mainQ_init_args
+      else []
+    in
 
   mainQ_fd.slocals <- mainQ_locals @ mainQ_fd.slocals;
   mainQ_fd.sbody <- visitCilBlock (new create_void_return_visitor) main_fd.sbody;

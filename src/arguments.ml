@@ -8,6 +8,9 @@ let arguments_raw =
     ( [ "-nopre"; "--nopre" ],
       "Disable instrumentation for precondition analysis",
       Arg.Clear enable_pre_instr );
+    ( [ "-nonla"; "--no-print-nla" ],
+      "Disable NLA printing",
+      Arg.Clear enable_print_nla );
     ( [ "-val"; "--validate" ],
       "Enable instrumentation for static validation with Ultimate",
       Arg.Set enable_validate_instr );

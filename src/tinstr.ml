@@ -23,6 +23,7 @@ class add_vtrace_for_complex_exp_visitor ast fd = object(self)
       match s.skind with
       | If (if_cond, if_block, else_block, loc) ->
         if is_complex_exp if_cond then
+          let _ = if !Globals.enable_print_nla then E.log "nla_loc: %i, %a\n" loc.line d_exp if_cond else () in 
           let vtrace_if_call = self#mk_vtrace vtrace_if_label loc in
           let vtrace_else_call = self#mk_vtrace vtrace_else_label loc in
           let () = if_block.bstmts <- [mkStmtOneInstr vtrace_if_call] @ if_block.bstmts in

@@ -50,8 +50,8 @@ class add_inv_for_complex_exp_visitor ast inv_tbl fd = object(self)
         if is_complex_exp if_cond then
           let if_appx_exp = self#find_and_parse_inv loc vtrace_if_label in
           let else_appx_exp = self#find_and_parse_inv loc vtrace_else_label in
-          (* Errormsg.log "if_appx_exp: %a\n" d_exp if_appx_exp; *)
-          (* Errormsg.log "else_appx_exp: %a\n" d_exp else_appx_exp; *)
+          (* Errormsg.log "if_appx_exp: %a\n" d_exp if_appx_exp;
+          Errormsg.log "else_appx_exp: %a\n" d_exp else_appx_exp; *)
           let if_instr_stmt =
             let else_error_stmt = mkStmt (If (neg if_appx_exp, mk_error_block (), mk_empty_block (), loc)) in
             mkStmt (If (else_appx_exp, mk_error_block (), mkBlock [else_error_stmt], loc)) in

@@ -1,6 +1,6 @@
 
 int main() {
-    int a, n, x, y, z, k;
+    int n, x, y, z, k;
     n = 0;
     x = 0;
     y = 1;
@@ -14,7 +14,10 @@ int main() {
             y = y + z;
             z = z + 6;
         }
-        y = 0;
+        n = 0;
+        x = 0;
+        y = 1;
+        z = 6;
     }
     return 0;
 }

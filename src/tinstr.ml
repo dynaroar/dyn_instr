@@ -26,7 +26,8 @@ class add_vtrace_for_complex_exp_visitor ast fd = object(self)
           let _ = 
             if !Globals.enable_print_nla then 
               (* E.log "nla_loc: %i, %a\n" loc.line d_exp if_cond  *)
-              Pretty.fprint stdout ~width:80 (Pretty.dprintf "nla_loc: %i, %a\n" loc.line d_exp if_cond)
+              (* Pretty.fprint stdout ~width:80 (Pretty.dprintf "nla_loc: %i, %a\n" loc.line d_exp if_cond) *)
+              ignore (Pretty.printf "nla_loc: %i, %a\n" loc.line d_exp if_cond)
             else () in 
           let vtrace_if_call = self#mk_vtrace vtrace_if_label loc in
           let vtrace_else_call = self#mk_vtrace vtrace_else_label loc in

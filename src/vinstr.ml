@@ -43,22 +43,38 @@ class add_inv_for_complex_exp_visitor ast inv_tbl fd = object(self)
       (try parse_exp_with_error (Lexing.from_string appx) with
       | _ -> missing_appx)
 
+  method private mk_case_var ?(too_big=true) loc label =
+    let case_label =
+      if too_big then "too_big"
+      else "too_small"
+    in
+    let vname = mk_var_name loc (label ^ "_" ^ case_label) in
+    let vi = makeLocalVar fd vname intType in
+    vi
+
+  method private mk_error_block_with_label ?(too_big=true) loc label =
+    let label_vi = self#mk_case_var loc label ~too_big:too_big in
+    let label_assignment = mkStmtOneInstr (Set (var label_vi, one, loc)) in
+    let err_block = mk_error_block () in
+    err_block.bstmts <- label_assignment::err_block.bstmts;
+    err_block
+
   method vstmt (s: stmt) =
     let action s =
       match s.skind with
       | If (if_cond, if_block, else_block, loc) ->
         if is_complex_exp if_cond then
-          let if_appx_exp = self#find_and_parse_inv loc vtrace_if_label in
-          let else_appx_exp = self#find_and_parse_inv loc vtrace_else_label in
+          let if_appx_exp = self#find_and_parse_inv loc if_label in
+          let else_appx_exp = self#find_and_parse_inv ~if_inv:false loc else_label in
           (* Errormsg.log "if_appx_exp: %a\n" d_exp if_appx_exp;
           Errormsg.log "else_appx_exp: %a\n" d_exp else_appx_exp; *)
           let if_instr_stmt =
-            let else_error_stmt = mkStmt (If (neg if_appx_exp, mk_error_block (), mk_empty_block (), loc)) in
-            mkStmt (If (else_appx_exp, mk_error_block (), mkBlock [else_error_stmt], loc)) in
+            let else_error_stmt = mkStmt (If (neg if_appx_exp, self#mk_error_block_with_label loc if_label ~too_big:false, mk_empty_block (), loc)) in
+            mkStmt (If (else_appx_exp, self#mk_error_block_with_label loc else_label ~too_big:true, mkBlock [else_error_stmt], loc)) in
           (* Errormsg.log "if_instr_stmt: %a\n" d_stmt if_instr_stmt; *)
           let else_instr_stmt =
-            let else_error_stmt = mkStmt (If (neg else_appx_exp, mk_error_block (), mk_empty_block (), loc)) in
-            mkStmt (If (if_appx_exp, mk_error_block (), mkBlock [else_error_stmt], loc)) in
+            let else_error_stmt = mkStmt (If (neg else_appx_exp, self#mk_error_block_with_label loc else_label ~too_big:false, mk_empty_block (), loc)) in
+            mkStmt (If (if_appx_exp, self#mk_error_block_with_label loc if_label ~too_big:true, mkBlock [else_error_stmt], loc)) in
           (* Errormsg.log "else_instr_stmt: %a\n" d_stmt else_instr_stmt; *)
           if_block.bstmts <- [if_instr_stmt] @ if_block.bstmts;
           else_block.bstmts <- [else_instr_stmt] @ else_block.bstmts;

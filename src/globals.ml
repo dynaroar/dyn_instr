@@ -9,3 +9,5 @@ let enable_print_nla = ref true
 let input_file = ref ""
 
 let input_csv_file = ref ""
+
+let input_precond = ref ""

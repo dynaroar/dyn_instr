@@ -8,8 +8,8 @@ let cil_tmp_prefix = "__cil_tmp"
 let main_name = "main"
 let mainQ_prefix = "mainQ"
 let vtrace_prefix = "vtrace"
-let vtrace_if_label = "if"
-let vtrace_else_label = "else"
+let if_label = "if"
+let else_label = "else"
 let vtrace_assign_label = "assign"
 let error_func_name = "reach_error"
 
@@ -69,8 +69,12 @@ let rec is_nla_exp (e: exp) =
   let is_complex_exp (e: exp) =
     is_nla_exp e
 
+let mk_var_name ?(prefix=None) loc label = 
+  (match prefix with | None | Some "" -> "" | Some p -> p ^ "_")
+  ^ label ^ "_" ^ (string_of_int loc.line)
+
 let mk_vtrace_name loc label =
-  vtrace_prefix ^ "_" ^ label ^ "_" ^ (string_of_int loc.line)
+  mk_var_name ~prefix:(Some vtrace_prefix) loc label
 
 let v2e (v: lval): exp = Lval v
 
@@ -99,7 +103,7 @@ let mk_error_func_call () =
 
 let mk_empty_block () = mkBlock []
 
-let mk_error_block () =
+let mk_error_block _ =
   let block = mk_empty_block () in
   block.bstmts <- (mk_error_func_call ())::block.bstmts;
   block

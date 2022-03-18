@@ -29,8 +29,8 @@ class add_vtrace_for_complex_exp_visitor ast fd = object(self)
               (* Pretty.fprint stdout ~width:80 (Pretty.dprintf "nla_loc: %i, %a\n" loc.line d_exp if_cond) *)
               ignore (Pretty.printf "nla_loc: %i, %a\n" loc.line d_exp if_cond)
             else () in 
-          let vtrace_if_call = self#mk_vtrace vtrace_if_label loc in
-          let vtrace_else_call = self#mk_vtrace vtrace_else_label loc in
+          let vtrace_if_call = self#mk_vtrace if_label loc in
+          let vtrace_else_call = self#mk_vtrace else_label loc in
           let () = if_block.bstmts <- [mkStmtOneInstr vtrace_if_call] @ if_block.bstmts in
           let () = else_block.bstmts <- [mkStmtOneInstr vtrace_else_call] @ else_block.bstmts in
           s

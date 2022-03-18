@@ -7,7 +7,7 @@ let main () =
     Tinstr.vtrace_instr !Globals.input_file
   else if !Globals.enable_validate_instr then
     let _ = print_endline "Instrumentation for static validation with Ultimate" in
-    Vinstr.validate_instr !Globals.input_file !Globals.input_csv_file
+    Vinstr.validate_instr !Globals.input_file !Globals.input_csv_file !Globals.input_precond !Globals.input_case_label
   else
     failwith "No option provided!"
 

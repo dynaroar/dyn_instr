@@ -11,3 +11,5 @@ let input_file = ref ""
 let input_csv_file = ref ""
 
 let input_precond = ref ""
+
+let input_case_label = ref ""

@@ -10,15 +10,16 @@ let print_error_position outx lexbuf =
     pos.pos_lnum (pos.pos_cnum - pos.pos_bol + 1)
 
 let parse_exp_with_error lexbuf =
-  try Iparser.inv Ilexer.read lexbuf with
-  | Ilexer.SyntaxError msg ->
+  try Iparser.inv Ilexer.read lexbuf 
+  with
+  | Ilexer.SyntaxError msg as e ->
     Printf.fprintf stderr "%a: %s\n" print_error_position lexbuf msg;
-    exit (-1)
-  | Iparser.Error ->
+    raise e
+  | Iparser.Error as e ->
     Printf.fprintf stderr "%a: syntax error\n" print_error_position lexbuf;
-    exit (-1)
+    raise e
 
-class add_inv_for_complex_exp_visitor ast inv_tbl fd = object(self)
+class add_inv_for_complex_exp_visitor ast inv_tbl opt_case fd = object(self)
   inherit nopCilVisitor
 
   method private mk_vtrace label loc =
@@ -54,10 +55,32 @@ class add_inv_for_complex_exp_visitor ast inv_tbl fd = object(self)
 
   method private mk_error_block_with_label ?(too_big=true) loc label =
     let label_vi = self#mk_case_var loc label ~too_big:too_big in
-    let label_assignment = mkStmtOneInstr (Set (var label_vi, one, loc)) in
-    let err_block = mk_error_block () in
-    err_block.bstmts <- label_assignment::err_block.bstmts;
-    err_block
+    let mk_block vi = 
+      let label_assignment = mkStmtOneInstr (Set (var label_vi, one, loc)) in
+      let err_block = mk_error_block () in
+      err_block.bstmts <- label_assignment::err_block.bstmts;
+      err_block
+    in
+    let mk_assume_false_block _ =
+      let assume_false_stmt = mk_assume (Cil.BinOp (Eq, zero, one, intType)) in
+      let empty_block = mk_empty_block () in
+      empty_block.bstmts <- assume_false_stmt::empty_block.bstmts;
+      empty_block
+    in
+    match opt_case with
+    | None -> mk_block label_vi
+    | Some lbl ->
+      try
+        let case_loc = int_of_string (String.split_on_char '_' lbl |> List.rev |> List.hd) in
+        let _ = print_endline (string_of_int case_loc) in
+        if case_loc != loc.line || String.compare label_vi.vname lbl != 0 then 
+          (print_endline (label_vi.vname);
+          print_endline (lbl);
+          mk_assume_false_block ())
+        else mk_block label_vi
+      with _ -> 
+        Printf.fprintf stderr "Cannot get location from label %s. Ignore it.\n" lbl;
+        mk_block label_vi
 
   method vstmt (s: stmt) =
     let action s =
@@ -86,11 +109,23 @@ class add_inv_for_complex_exp_visitor ast inv_tbl fd = object(self)
 
 end
 
-let add_inv_for_complex_exp ast inv_tbl fd _ =
-  let visitor = new add_inv_for_complex_exp_visitor ast inv_tbl fd in
-  ignore (visitCilFunction (visitor :> nopCilVisitor) fd)
+let add_inv_for_complex_exp ast ?(opt_inv_tbl=None) opt_pre opt_case fd _ =
+  let () =
+    match opt_pre with
+    | None -> ()
+    | Some pre ->
+      if not (is_main (fname_of_fundec fd)) then ()
+      else
+        let assume_stmt = mk_assume pre in
+        fd.sbody.bstmts <- assume_stmt::fd.sbody.bstmts
+  in
+  match opt_inv_tbl with
+  | None -> ()
+  | Some tbl ->
+    let visitor = new add_inv_for_complex_exp_visitor ast tbl opt_case fd in
+    ignore (visitCilFunction (visitor :> nopCilVisitor) fd)
 
-let validate_instr src csv = 
+let validate_instr src csv pre case = 
   begin
     initCIL();
     Cil.lineDirectiveStyle := None; (* reduce code, remove all junk stuff *)
@@ -100,17 +135,37 @@ let validate_instr src csv =
 
     let fn = Filename.remove_extension src in
     let ext = Filename.extension src in
-    
-    let inv_tbl = H.create 10 in
-    let () = L.iter (fun str_lst ->
-      match str_lst with
-      | lbl::inv::[] -> H.add inv_tbl lbl inv
-      | _ -> E.s (E.error "Invalid csv row: %s" (S.concat "; " str_lst))
-      ) (Csv.load ~separator:csv_sep ~strip:true csv) 
+
+    let ast = Frontc.parse src () in
+
+    let opt_pre =
+      if pre = "" then None
+      else
+        try Some (parse_exp_with_error (Lexing.from_string pre))
+        with _ ->
+          Printf.fprintf stderr "Cannot parse the given precondition. Ignore it.\n"; 
+          None
     in
     
-    let ast = Frontc.parse src () in
-    iterGlobals ast (only_functions (add_inv_for_complex_exp ast inv_tbl));
+    let opt_inv_tbl = 
+      if csv = "" then None
+      else
+        let tbl = H.create 10 in
+      let () = L.iter (fun str_lst ->
+        match str_lst with
+        | lbl::inv::[] -> H.add tbl lbl inv
+        | _ -> E.s (E.error "Invalid csv row: %s" (S.concat "; " str_lst))
+        ) (Csv.load ~separator:csv_sep ~strip:true csv) 
+      in
+      Some tbl
+    in
+
+    let opt_case = 
+      if case = "" then None
+      else Some case
+    in
+    
+    iterGlobals ast (only_functions (add_inv_for_complex_exp ast ~opt_inv_tbl:opt_inv_tbl opt_pre opt_case));
     (* write_stdout ast *)
     write_src (fn ^ "_validate" ^ ext) ast
   end

@@ -40,6 +40,9 @@ and arguments_raw =
     ( [ "-pre"; "--pre" ],
       "Add a precondition to the validation",
       Arg.Set_string input_precond );
+    ( [ "-case"; "--case" ],
+      "Indicate the only case to keep in the validation",
+      Arg.Set_string input_case_label );
     [ "-h"; "-help"; "--help" ], "Print all options", Arg.Unit print_usage
   ]
 

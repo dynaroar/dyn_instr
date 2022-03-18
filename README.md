@@ -12,12 +12,12 @@
 - If you want to use `ocaml-lsp-server` with an IDE such as Visual Studio Code or Emacs, you need to install OCaml >= 4.06.0 and compile and install CIL from https://github.com/letonchanh/cil.
 - `vtrace` instrumentation:
     ```
-    dune exec -- src/instr.exe -dig input.c
+    dune exec -- src/instr.exe -dig input.c [-nopre] [-nonla]
     ```
     The instrumentation result is the file `input_instr.c` in the same folder as `input.c`.
 - Validation instrumentation:
     ```
-    dune exec -- src/instr.exe -val input.c -inv inv.csv
+    dune exec -- src/instr.exe -val input.c -inv inv.csv [-pre cond] [-case label]
     ```
     The instrumentation result is the file `input_validate.c` in the same folder as `input.c`.
     Note that `input.c` must be the same source file in the `vtrace` instrumentation.

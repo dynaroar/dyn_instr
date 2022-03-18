@@ -13,11 +13,13 @@ let else_label = "else"
 let vtrace_assign_label = "assign"
 let error_func_name = "reach_error"
 
+let assume_func_name = "__VERIFIER_assume"
+
 let atoi_func_name = "atoi"
 let argv_name = "argv"
 let argc_name = "argc"
 
-let builtin_functions = [main_name; mainQ_prefix; vtrace_prefix; error_func_name; atoi_func_name]
+let builtin_functions = [main_name; mainQ_prefix; vtrace_prefix; error_func_name; assume_func_name; atoi_func_name]
 
 let contains s prefix =
   let prefix_len = S.length prefix in
@@ -29,6 +31,9 @@ let is_cil_tmp vname =
 
 let is_main fname =
   contains fname main_name
+
+let is_mainQ fname =
+  contains fname mainQ_prefix
 
 let is_builtin_function fname =
   L.exists (fun prefix -> contains fname prefix) builtin_functions
@@ -100,6 +105,9 @@ let atoi_func_type =
 
 let mk_error_func_call () = 
   mkStmtOneInstr (mk_Call error_func_name [])
+
+let mk_assume cond =
+  mkStmtOneInstr (mk_Call assume_func_name [cond])
 
 let mk_empty_block () = mkBlock []
 

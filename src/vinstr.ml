@@ -72,11 +72,8 @@ class add_inv_for_complex_exp_visitor ast inv_tbl opt_case fd = object(self)
     | Some lbl ->
       try
         let case_loc = int_of_string (String.split_on_char '_' lbl |> List.rev |> List.hd) in
-        let _ = print_endline (string_of_int case_loc) in
-        if case_loc != loc.line || String.compare label_vi.vname lbl != 0 then 
-          (print_endline (label_vi.vname);
-          print_endline (lbl);
-          mk_assume_false_block ())
+        if case_loc != loc.line || String.compare label_vi.vname lbl != 0 then
+          mk_assume_false_block ()
         else mk_block label_vi
       with _ -> 
         Printf.fprintf stderr "Cannot get location from label %s. Ignore it.\n" lbl;

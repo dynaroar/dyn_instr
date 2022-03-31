@@ -83,7 +83,7 @@ class add_inv_for_complex_exp_visitor ast inv_tbl opt_case fd = object(self)
     let action s =
       match s.skind with
       | If (if_cond, if_block, else_block, loc) ->
-        if is_complex_exp if_cond then
+        if !Globals.enable_instr_all || is_complex_exp if_cond then
           let if_appx_exp = self#find_and_parse_inv loc if_label in
           let else_appx_exp = self#find_and_parse_inv ~if_inv:false loc else_label in
           (* Errormsg.log "if_appx_exp: %a\n" d_exp if_appx_exp;

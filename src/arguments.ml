@@ -28,6 +28,9 @@ and arguments_raw =
     ( [ "-nopre"; "--nopre" ],
       "Disable instrumentation for precondition analysis",
       Arg.Clear enable_pre_instr );
+    ( [ "-all"; "--all" ],
+      "Dynamic instrumentation without restrictions",
+      Arg.Set enable_instr_all );
     ( [ "-nonla"; "--no-print-nla" ],
       "Disable NLA printing",
       Arg.Clear enable_print_nla );

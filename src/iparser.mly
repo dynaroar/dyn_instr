@@ -16,11 +16,13 @@
 %token AND OR NOT
 %token EOF
 
-%left AND OR 
+%left OR
+%left AND
+%right NOT 
 %right EQ
 %left LT LE GT GE
 %left PLUS MINUS
-%left MULT DIV MOD 
+%left MULT DIV MOD
 
 %start <Cil.exp> inv
 %%

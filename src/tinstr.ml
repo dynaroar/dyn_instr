@@ -22,7 +22,7 @@ class add_vtrace_for_complex_exp_visitor ast fd = object(self)
     let action s =
       match s.skind with
       | If (if_cond, if_block, else_block, loc) ->
-        if is_complex_exp if_cond then
+        if !Globals.enable_instr_all || is_complex_exp if_cond then
           let _ = 
             if !Globals.enable_print_nla then 
               (* E.log "nla_loc: %i, %a\n" loc.line d_exp if_cond  *)

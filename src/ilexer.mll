@@ -42,7 +42,7 @@ rule read = parse
   | ">="       { GE }
   | "<"        { LT }
   | "<="       { LE }
-  | "="        { EQ }
+  | "=="        { EQ }
   | "!="       { NEQ }
   | "&&"       { AND }
   | "||"       { OR }

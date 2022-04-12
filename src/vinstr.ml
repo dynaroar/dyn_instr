@@ -6,10 +6,8 @@ let csv_sep = ';'
 
 let print_error_position outx lexbuf =
   let pos = lexbuf.lex_curr_p in
-  let tok = Lexing.lexeme lexbuf in
-  let tail = Ilexer.ruleTail "" lexbuf in
-  Printf.fprintf outx "%s:%d:%d: Unexpected token %s before %s" pos.pos_fname
-    pos.pos_lnum (pos.pos_cnum - pos.pos_bol + 1) tok tail
+  Printf.fprintf outx "%s:%d:%d" pos.pos_fname
+    pos.pos_lnum (pos.pos_cnum - pos.pos_bol + 1)
 
 let parse_exp_with_error lexbuf =
   try Iparser.inv Ilexer.read lexbuf 
@@ -18,7 +16,9 @@ let parse_exp_with_error lexbuf =
     Printf.fprintf stderr "%a: %s\n" print_error_position lexbuf msg;
     raise e
   | Iparser.Error as e ->
-    Printf.fprintf stderr "Syntax error: %a\n" print_error_position lexbuf;
+    let tok = Lexing.lexeme lexbuf in
+    let tail = Ilexer.rule_tail "" lexbuf in
+    Printf.fprintf stderr "%a: Syntax error: Unexpected token %s before %s\n" print_error_position lexbuf tok tail;
     raise e
 
 class add_inv_for_complex_exp_visitor ast inv_tbl opt_case fd = object(self)

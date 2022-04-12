@@ -39,13 +39,16 @@ and arguments_raw =
       Arg.Set enable_validate_instr );
     ( [ "-inv"; "--invariants" ],
       "Provide potential invariants to be validated in the CSV format",
-      Arg.Set_string input_csv_file );
+      Arg.Set_string input_csv_inv_file );
     ( [ "-pre"; "--pre" ],
       "Add a precondition to the validation",
       Arg.Set_string input_precond );
     ( [ "-case"; "--case" ],
       "Indicate the only case to keep in the validation",
       Arg.Set_string input_case_label );
+    ( [ "-lia"; "--lia" ],
+      "Provide LIA conditions in the CSV format to plug into the program",
+      Arg.Set_string input_csv_lia_file );
     [ "-h"; "-help"; "--help" ], "Print all options", Arg.Unit print_usage
   ]
 

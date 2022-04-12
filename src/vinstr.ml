@@ -122,6 +122,34 @@ let add_inv_for_complex_exp ast ?(opt_inv_tbl=None) opt_pre opt_case fd _ =
     let visitor = new add_inv_for_complex_exp_visitor ast tbl opt_case fd in
     ignore (visitCilFunction (visitor :> nopCilVisitor) fd)
 
+class add_lia_conds_visitor ast lia_tbl fd = object(self)
+  inherit nopCilVisitor
+
+  method vstmt (s: stmt) =
+    let action s =
+      match s.skind with
+      | If (if_cond, if_block, else_block, loc) ->
+        (match H.find_opt lia_tbl loc.line with
+        | None -> s
+        | Some scond ->
+          (try 
+            let cond = parse_exp_with_error (Lexing.from_string scond) in
+            s.skind <- If (cond, if_block, else_block, loc);
+            s
+          with
+          | _ -> s))
+      | _ -> s
+    in
+    ChangeDoChildrenPost(s, action)
+end
+
+let add_lia_conds ast ?(opt_lia_tbl=None) fd _ =
+  match opt_lia_tbl with
+  | None -> ()
+  | Some tbl ->
+    let visitor = new add_lia_conds_visitor ast tbl fd in
+    ignore (visitCilFunction (visitor :> nopCilVisitor) fd)
+
 let validate_instr src csv pre case = 
   begin
     initCIL();
@@ -148,13 +176,13 @@ let validate_instr src csv pre case =
       if csv = "" then None
       else
         let tbl = H.create 10 in
-      let () = L.iter (fun str_lst ->
-        match str_lst with
-        | lbl::inv::[] -> H.add tbl lbl inv
-        | _ -> E.s (E.error "Invalid csv row: %s" (S.concat "; " str_lst))
-        ) (Csv.load ~separator:csv_sep ~strip:true csv) 
-      in
-      Some tbl
+        let () = L.iter (fun str_lst ->
+          match str_lst with
+          | lbl::inv::[] -> H.add tbl lbl inv
+          | _ -> E.s (E.error "Invalid csv row: %s" (S.concat "; " str_lst))
+          ) (Csv.load ~separator:csv_sep ~strip:true csv) 
+        in
+        Some tbl
     in
 
     let opt_case = 
@@ -165,4 +193,34 @@ let validate_instr src csv pre case =
     iterGlobals ast (only_functions (add_inv_for_complex_exp ast ~opt_inv_tbl:opt_inv_tbl opt_pre opt_case));
     (* write_stdout ast *)
     write_src (fn ^ "_validate" ^ ext) ast
+  end
+
+let lia_instr src csv = 
+  begin
+    initCIL();
+    Cil.lineDirectiveStyle := None; (* reduce code, remove all junk stuff *)
+    Cprint.printLn := false; (* do not print line *)
+    (* for Cil to retain &&, ||, ?: instead of transforming them to If stmts *)
+    Cil.useLogicalOperators := true;
+
+    let fn = Filename.remove_extension src in
+    let ext = Filename.extension src in
+
+    let ast = Frontc.parse src () in
+
+    let opt_lia_tbl = 
+      if csv = "" then None
+      else
+        let tbl = H.create 10 in
+        let () = L.iter (fun str_lst ->
+          match str_lst with
+          | loc::lia_cond::[] -> H.add tbl (int_of_string loc) lia_cond
+          | _ -> E.s (E.error "Invalid csv row: %s" (S.concat "; " str_lst))
+          ) (Csv.load ~separator:csv_sep ~strip:true csv) 
+        in
+        Some tbl
+    in
+
+    iterGlobals ast (only_functions (add_lia_conds ast ~opt_lia_tbl:opt_lia_tbl));
+    write_src (fn ^ "_lia" ^ ext) ast
   end

@@ -69,3 +69,7 @@ and read_string buf = parse
                 }
   | _           { raise (SyntaxError ("ILexer - Illegal string character: " ^ Lexing.lexeme lexbuf)) }
   | eof         { raise (SyntaxError ("ILexer - String is not terminated")) }
+
+and ruleTail acc = parse
+  | eof { acc ^ " eof" }
+  | _* as str { ruleTail (acc ^ str) lexbuf }

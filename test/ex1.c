@@ -1,7 +1,8 @@
 extern void reach_error();
+extern int __VERIFIER_nondet_int();
 
 void main() {
-    int x;
+    int x = __VERIFIER_nondet_int();
     // int y = x;
     if (x * x > 100) {
         //x = x*x + 1;

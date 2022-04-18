@@ -22,6 +22,7 @@
  (synopsis "CIL Instrumentation for Dynamic Analysis")
  (description "CIL Instrumentation for Dynamic Analysis")
  (depends ocaml dune cil)
+ (allow_empty)
  (tags
   (dynamic analysis)))
 

@@ -91,7 +91,7 @@ class collect_initialized_local_vars_visitor = object(self)
 
   method vinst (i: instr) =
     (match i with
-    | Call (v_opt, _, es, _) ->
+    | Call (v_opt, fn, es, _) ->
       (match v_opt with
       | Some (Var v, _) when not (List.mem v.vname initialized_vars) ->
         initialized_vars <- initialized_vars @ [v.vname]
@@ -105,10 +105,34 @@ class collect_initialized_local_vars_visitor = object(self)
     initialized_vars
 end
 
+class remove_nondet_tmp_vars_visitor = object(self)
+  inherit nopCilVisitor
+
+  method vinst (i: instr) =
+    let n_instr_list =
+      match i with
+      | Call (v_opt, _, _, _) ->
+        (match v_opt with
+        | Some (Var v, _) when is_nondet_tmp_var v -> []
+        | _ -> [i])
+      | Set (_, e, _) ->
+        (try 
+          let vi = vi_of_var_exp e in
+          if is_nondet_tmp_var vi then []
+          else [i]
+        with _ -> [i])
+      | _ -> [i]
+    in 
+    ChangeTo(n_instr_list)
+end
+
 let collect_uninitialized_local_vars (fd: fundec) =
+  let rntv = new remove_nondet_tmp_vars_visitor in
+  ignore (visitCilBlock (rntv :> nopCilVisitor) fd.sbody);
   let culv = new collect_initialized_local_vars_visitor in
   ignore (visitCilBlock (culv :> nopCilVisitor) fd.sbody);
   let initialized_vars = culv#get_initialized_vars () in
+  fd.slocals <- List.filter (fun vi -> not (is_nondet_tmp_var vi)) fd.slocals;
   List.filter (fun vi -> not (List.mem vi.vname initialized_vars)) fd.slocals
 
 let mk_argv_assignment v main_argv argv_index =

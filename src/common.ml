@@ -15,36 +15,55 @@ let error_func_name = "reach_error"
 
 let assume_func_name = "__VERIFIER_assume"
 
+let nondet_func_names = ["__VERIFIER_nondet_int"; "nondet"]
+
 let atoi_func_name = "atoi"
 let argv_name = "argv"
 let argc_name = "argc"
 
-let builtin_functions = [main_name; mainQ_prefix; vtrace_prefix; error_func_name; assume_func_name; atoi_func_name]
+let builtin_functions = 
+  [main_name; mainQ_prefix; vtrace_prefix; error_func_name; assume_func_name; atoi_func_name] @
+  nondet_func_names
 
-let contains s prefix =
+let contains_prefix s prefix =
   let prefix_len = S.length prefix in
   S.length s >= prefix_len &&
   S.sub s 0 prefix_len = prefix
 
+let contains s ss =
+  let re = Str.regexp_string ss in
+  try (ignore (Str.search_forward re s 0); true)
+  with Not_found -> false
+
 let is_cil_tmp vname =
-  contains vname cil_tmp_prefix
+  contains_prefix vname cil_tmp_prefix
 
 let is_main fname =
-  contains fname main_name
+  contains_prefix fname main_name
 
 let is_mainQ fname =
-  contains fname mainQ_prefix
+  contains_prefix fname mainQ_prefix
 
 let is_builtin_function fname =
-  L.exists (fun prefix -> contains fname prefix) builtin_functions
+  L.exists (fun prefix -> contains_prefix fname prefix) builtin_functions
 
 let fname_of_fundec fd =
   fd.svar.vname
 
-let fname_of_call e =
+let vi_of_var_exp e =
   match e with
-  | Lval (Var vi, _) -> vi.vname
-  | _ -> E.s (E.error "Cannot get function name from: %a" d_exp e)
+  | Lval (Var vi, _) -> vi
+  | _ -> E.s (E.error "vi_of_var_exp: %a is not a var exp" d_exp e)
+
+let fname_of_call e =
+  try
+    let vi = vi_of_var_exp e in
+    vi.vname
+  with _ -> E.s (E.error "Cannot get function name from: %a" d_exp e)
+
+let is_nondet_tmp_var vi =
+  let desrc = Pretty.sprint ~width:80 vi.vdescr in
+  List.exists (fun nd -> contains desrc nd) nondet_func_names
 
 let boolType =
   match intType with

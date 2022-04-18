@@ -53,13 +53,18 @@ let fname_of_fundec fd =
 let vi_of_var_exp e =
   match e with
   | Lval (Var vi, _) -> vi
-  | _ -> E.s (E.error "vi_of_var_exp: %a is not a var exp" d_exp e)
+  | _ -> E.s (E.warn "vi_of_var_exp: %a is not a var exp" d_exp e)
+
+
+let vi_opt_of_var_exp e =
+  match e with
+  | Lval (Var vi, _) -> Some vi
+  | _ -> None
 
 let fname_of_call e =
-  try
-    let vi = vi_of_var_exp e in
-    vi.vname
-  with _ -> E.s (E.error "Cannot get function name from: %a" d_exp e)
+  match vi_opt_of_var_exp e with
+  | Some vi -> vi.vname
+  | _ -> E.s (E.error "Cannot get function name from: %a" d_exp e)
 
 let is_nondet_tmp_var vi =
   let desrc = Pretty.sprint ~width:80 vi.vdescr in

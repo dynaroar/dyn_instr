@@ -109,18 +109,19 @@ class remove_nondet_tmp_vars_visitor = object(self)
   inherit nopCilVisitor
 
   method vinst (i: instr) =
+    let is_nondet_tmp_var_opt v_opt =
+      match v_opt with
+      | Some (Var v, _) when is_nondet_tmp_var v -> true
+      | _ -> false
+    in
+
     let n_instr_list =
       match i with
-      | Call (v_opt, _, _, _) ->
-        (match v_opt with
-        | Some (Var v, _) when is_nondet_tmp_var v -> []
-        | _ -> [i])
+      | Call (v_opt, fn, _, _) when (is_nondet_tmp_var_opt v_opt) || (List.mem (fname_of_call fn) nondet_func_names) -> []
       | Set (_, e, _) ->
-        (try 
-          let vi = vi_of_var_exp e in
-          if is_nondet_tmp_var vi then []
-          else [i]
-        with _ -> [i])
+        (match vi_opt_of_var_exp e with
+        | Some vi when is_nondet_tmp_var vi -> []
+        | _ -> [i])
       | _ -> [i]
     in 
     ChangeTo(n_instr_list)

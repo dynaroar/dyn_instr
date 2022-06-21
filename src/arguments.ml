@@ -49,6 +49,9 @@ and arguments_raw =
     ( [ "-lia"; "--lia" ],
       "Provide LIA conditions in the CSV format to plug into the program",
       Arg.Set_string input_csv_lia_file );
+    ( [ "-lbnd"; "--loop-bound" ],
+      "Set the upper bound for the number of loop iterations",
+      Arg.Set_int loop_bnd );
     [ "-h"; "-help"; "--help" ], "Print all options", Arg.Unit print_usage
   ]
 

@@ -8,6 +8,8 @@ let enable_print_nla = ref true
 
 let enable_instr_all = ref false
 
+let loop_bnd = ref 0
+
 let input_file = ref ""
 
 let input_csv_inv_file = ref ""

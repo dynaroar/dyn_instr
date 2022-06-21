@@ -204,7 +204,44 @@ class add_empty_body_extern_visitor = object(self)
     ChangeTo(n_globs)
 end
 
-let vtrace_instr src = 
+class add_loop_bnd_visitor loop_bnd (fd: fundec) = object(self)
+  inherit nopCilVisitor
+
+  method private mk_loop_bnd_stmts (fd: fundec) =
+    let bnd_vi = find_or_create_local_var "_bnd" fd in
+    let cnt_vi = find_or_create_local_var "_cnt" fd in
+    let bnd_var = var bnd_vi in
+    let cnt_var = var cnt_vi in
+    (* _bnd = loop_bnd *)
+    let bnd_init_stmt = mkStmtOneInstr (Set(bnd_var, integer loop_bnd, !currentLoc)) in
+    (* _cnt = 0 *)
+    let cnt_init_stmt = mkStmtOneInstr (Set(cnt_var, zero, !currentLoc)) in
+    (* if (_cnt >= _bnd) break else _cnt++ *)
+    let cnt_ge_bnd_cond = BinOp(Ge, v2e cnt_var, v2e bnd_var, intType) in
+    let if_break_block = mkBlock [(mkStmt (Break !currentLoc))] in
+    let else_incr_block = mkBlock [mkStmtOneInstr (Set(cnt_var, increm (v2e cnt_var) 1, !currentLoc))] in
+    let inloop_if_stmt = mkStmt (If(cnt_ge_bnd_cond, if_break_block, else_incr_block, !currentLoc)) in
+    bnd_init_stmt, cnt_init_stmt, inloop_if_stmt
+
+  method vstmt (s: stmt) =
+    let action s =
+      match s.skind with
+      | Loop (b, loc, _, _) ->
+        let bnd_init_stmt, cnt_init_stmt, inloop_if_stmt = self#mk_loop_bnd_stmts fd in
+        let () = b.bstmts <- (inloop_if_stmt :: b.bstmts) in
+        let nb = mkBlock [bnd_init_stmt; cnt_init_stmt; mkStmt s.skind] in
+        let () = s.skind <- Block nb in
+        s
+      | _ -> s
+    in
+    ChangeDoChildrenPost(s, action)
+end
+
+let add_loop_bnd loop_bnd fd _ =
+  let visitor = new add_loop_bnd_visitor loop_bnd fd in
+  ignore (visitCilBlock (visitor :> nopCilVisitor) fd.sbody)
+
+let vtrace_instr ?(loop_bnd = 0) src = 
   begin
     initCIL();
     Cil.lineDirectiveStyle := None; (* reduce code, remove all junk stuff *)
@@ -218,6 +255,7 @@ let vtrace_instr src =
     let mainQ_init_args = mk_instrumenting_functions ast in
     iterGlobals ast (only_functions (add_mainQ_init_args mainQ_init_args));
     iterGlobals ast (only_functions (add_vtrace_for_complex_exp ast));
+    if loop_bnd > 0 then iterGlobals ast (only_functions (add_loop_bnd loop_bnd));
     visitCilFile (new add_empty_body_extern_visitor) ast;
     ast.globals <- (GText "#include \"stdlib.h\""):: ast.globals;
     (* write_stdout ast *)

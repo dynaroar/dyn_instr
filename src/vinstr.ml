@@ -152,7 +152,7 @@ let add_lia_conds ast ?(opt_lia_tbl=None) fd _ =
     let visitor = new add_lia_conds_visitor ast tbl fd in
     ignore (visitCilFunction (visitor :> nopCilVisitor) fd)
 
-let validate_instr src csv pre case = 
+let validate_instr ?(csv = "") ?(pre = "") ?(case = "") src = 
   begin
     initCIL();
     Cil.lineDirectiveStyle := None; (* reduce code, remove all junk stuff *)
@@ -197,7 +197,7 @@ let validate_instr src csv pre case =
     write_src (fn ^ "_validate" ^ ext) ast
   end
 
-let lia_instr src csv = 
+let lia_instr ?(csv = "") src = 
   begin
     initCIL();
     Cil.lineDirectiveStyle := None; (* reduce code, remove all junk stuff *)

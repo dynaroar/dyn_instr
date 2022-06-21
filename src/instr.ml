@@ -4,13 +4,13 @@ let main () =
   let _ = Arguments.parse_arguments () in
   if !Globals.enable_dig_instr then
     let _ = print_endline "Instrumentation for dynamic analysis with DIG" in
-    Tinstr.vtrace_instr !Globals.input_file
+    Tinstr.vtrace_instr !Globals.input_file ~loop_bnd:!Globals.loop_bnd
   else if !Globals.enable_validate_instr then
     let _ = print_endline "Instrumentation for static validation with Ultimate" in
-    Vinstr.validate_instr !Globals.input_file !Globals.input_csv_inv_file !Globals.input_precond !Globals.input_case_label
+    Vinstr.validate_instr !Globals.input_file ~csv:!Globals.input_csv_inv_file ~pre:!Globals.input_precond ~case:!Globals.input_case_label
   else if String.length !Globals.input_csv_lia_file > 0 then
     let _ = print_endline "Instrumentation for inserting LIA conditions" in
-    Vinstr.lia_instr !Globals.input_file !Globals.input_csv_lia_file
+    Vinstr.lia_instr !Globals.input_file ~csv:!Globals.input_csv_lia_file
   else
     failwith "No option provided!"
 

@@ -35,6 +35,11 @@ let contains s ss =
   try (ignore (Str.search_forward re s 0); true)
   with Not_found -> false
 
+let find_or_create_local_var vname fd =
+  match (List.find_opt (fun vi -> String.equal vname vi.vname) fd.slocals) with
+  | Some vi -> vi
+  | None -> makeLocalVar fd vname intType
+
 let is_cil_tmp vname =
   contains_prefix vname cil_tmp_prefix
 

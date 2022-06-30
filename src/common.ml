@@ -183,6 +183,26 @@ class create_void_return_visitor = object(self)
     ChangeDoChildrenPost(s, action)
 end
 
+class collect_vars_visitor = object(self)
+  inherit nopCilVisitor
+
+  val mutable vars = []
+
+  method vexpr (e: exp) =
+    (match e with
+    | Lval (Var v, _) -> vars <- vars @ [v]
+    | _ -> ());
+    DoChildren
+
+  method get_vars () =
+    vars
+end
+
+let vars_of_exp e =
+  let cvv = new collect_vars_visitor in
+  ignore (visitCilExpr (cvv :> nopCilVisitor) e);
+  cvv#get_vars ()
+
 (** Output *)
 let write_src ?(use_stdout:bool=false) (filename:string) (ast:file): unit = 
   let df oc = dumpFile defaultCilPrinter oc filename ast in

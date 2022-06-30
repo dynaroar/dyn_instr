@@ -88,16 +88,28 @@ class collect_initialized_local_vars_visitor = object(self)
   inherit nopCilVisitor
   
   val mutable initialized_vars = []
+  val mutable uninitialized_vars = []
+
+  method private collect_uninitialized_vars_rhs_exp e =
+    let e_vs = vars_of_exp e in
+    List.iter (fun v ->
+      if not (List.mem v.vname initialized_vars) then
+        uninitialized_vars <- uninitialized_vars @ [v.vname]
+      ) e_vs
 
   method vinst (i: instr) =
     (match i with
     | Call (v_opt, fn, es, _) ->
+      List.iter self#collect_uninitialized_vars_rhs_exp es;
       (match v_opt with
-      | Some (Var v, _) when not (List.mem v.vname initialized_vars) ->
-        initialized_vars <- initialized_vars @ [v.vname]
+      | Some (Var v, _) ->
+        if not (List.mem v.vname uninitialized_vars) && not (List.mem v.vname initialized_vars) then
+          initialized_vars <- initialized_vars @ [v.vname]
       | _ -> ())
-    | Set ((Var v, _), e, _) when not (List.mem v.vname initialized_vars) ->
-      initialized_vars <- initialized_vars @ [v.vname]
+    | Set ((Var v, _), e, _) ->
+      self#collect_uninitialized_vars_rhs_exp e;
+      if not (List.mem v.vname uninitialized_vars) && not (List.mem v.vname initialized_vars) then
+        initialized_vars <- initialized_vars @ [v.vname]
     | _ -> ());
     DoChildren
 
